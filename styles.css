@@ -668,6 +668,20 @@ header p {
 
 .ai-summary.visible { display: block; }
 
+.example-tag {
+  display: inline-block;
+  background: var(--ink);
+  color: #fff;
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 2px 7px;
+  border-radius: 999px;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+
 .playbook-banner {
   margin-top: 10px;
   background: var(--red-bg);

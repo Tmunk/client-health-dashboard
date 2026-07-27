@@ -7,9 +7,36 @@
 
 const API_KEY_STORAGE_KEY = "clientHealthDashboard_apiKey";
 
-// Populated after a successful generate; re-applied by app.js whenever the
-// card grid re-renders (e.g. after changing a filter) so notes survive.
+// A static, pre-written example so a visitor with no API key still sees what
+// the AI insights layer produces. Written by hand against the real computed
+// scores below (not captured from a live API call — see README) — clicking
+// "Generate AI Insights" with a real key replaces this with fresh output.
+const EXAMPLE_INSIGHTS = {
+  portfolio_summary:
+    "The portfolio is holding at a 71 average, roughly flat versus last period, with three accounts in the red tier driven mainly by stalled new-student growth and platform usage well below target. Pinecrest Virtual Academy and Cascade STEM Academy are trending sharply downward and need immediate attention, while most of the yellow tier is being held back by soft NPS. Green-tier accounts are broadly stable to improving, with strong usage and sentiment across the board.",
+  accounts: {
+    c001: "Firing on all cylinders this period — a standard check-in is all that's needed.",
+    c002: "Consistently strong; worth a call to explore an upsell or expansion opportunity.",
+    c003: "New student onboarding has stalled — work with the AM to find referral or enrollment blockers.",
+    c004: "Sharp decline from weak sentiment and stalled growth — schedule a risk review this week.",
+    c005: "Top performer across every metric — a strong candidate for a case study or reference call.",
+    c006: "Usage is healthy but NPS lags — follow up on recent support tickets or feedback.",
+    c007: "Critical risk: sentiment, usage, and growth are all weak — prioritize a save call immediately.",
+    c008: "New students are strong but NPS is soft — a satisfaction follow-up could clarify the gap.",
+    c009: "Excellent trajectory with strong usage and growth — low risk, minimal AM time needed.",
+    c010: "Sessions are healthy but new student growth is flat — check the enrollment pipeline.",
+    c011: "Steepest decline in the portfolio — usage and growth have both collapsed; treat as top priority.",
+    c012: "Small but consistently strong account — a good reference for similar-sized prospects.",
+    c013: "AM sentiment is the weak point despite decent usage — worth a relationship check-in.",
+    c014: "Large, stable account performing well across the board — maintain current cadence."
+  }
+};
+
+// Populated after a successful generate (or the static example above);
+// re-applied by app.js whenever the card grid re-renders (e.g. after
+// changing a filter) so notes survive.
 let aiInsightsByClientId = {};
+let insightsAreExample = true;
 
 function getStoredApiKey() {
   return localStorage.getItem(API_KEY_STORAGE_KEY) || "";
@@ -75,10 +102,32 @@ function applyStoredInsights() {
   Object.entries(aiInsightsByClientId).forEach(([id, note]) => {
     const box = document.getElementById(`ai-summary-${id}`);
     if (box && note) {
-      box.textContent = note;
+      box.innerHTML = "";
+      if (insightsAreExample) {
+        const tag = document.createElement("span");
+        tag.className = "example-tag";
+        tag.textContent = "Example";
+        box.appendChild(tag);
+      }
+      box.appendChild(document.createTextNode(note));
       box.classList.add("visible");
     }
   });
+}
+
+function showExampleInsights() {
+  const banner = document.getElementById("portfolioSummaryBanner");
+  banner.innerHTML = "";
+  const tag = document.createElement("span");
+  tag.className = "example-tag";
+  tag.textContent = "Example";
+  banner.appendChild(tag);
+  banner.appendChild(document.createTextNode(EXAMPLE_INSIGHTS.portfolio_summary));
+  banner.classList.add("visible");
+
+  insightsAreExample = true;
+  aiInsightsByClientId = { ...EXAMPLE_INSIGHTS.accounts };
+  applyStoredInsights();
 }
 
 async function generateAllInsights() {
@@ -128,6 +177,7 @@ async function generateAllInsights() {
     banner.textContent = parsed.portfolio_summary || "No summary returned.";
     banner.classList.add("visible");
 
+    insightsAreExample = false;
     aiInsightsByClientId = {};
     (parsed.accounts || []).forEach((entry) => {
       if (entry && entry.id) aiInsightsByClientId[entry.id] = entry.note || "";

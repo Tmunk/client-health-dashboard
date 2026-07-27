@@ -43,6 +43,8 @@ Accounts that drop into the red tier also show a **playbook trigger** banner ("s
 
 Every card also shows a **primary driver line** (e.g. "NPS is dragging the score down; new student growth is strong") — also rule-based, computed from which scoring category is furthest below its max. It's free and instant, and gives every card genuinely distinct content even before the AI insights are generated.
 
+**Example output, no key required:** since asking every visitor to bring their own API key is real friction, the page loads with a pre-written example already filled in (tagged `EXAMPLE` on the banner and on every card) so anyone can see what the feature produces without doing anything. That example was written by hand against the real computed scores, in the same format the live prompt requests — not literally captured from an API response — see `EXAMPLE_INSIGHTS` in `ai-summary.js`. Clicking "Generate AI Insights" with a real key replaces it with a fresh, genuinely live result.
+
 **On the API key:** this is a static site with no backend, so there's no server-side place to hide a key. The page asks whoever's using it to paste in their own Anthropic API key, which is stored only in that browser's `localStorage` and sent directly to `api.anthropic.com` — never to any third party, never committed to this repo. This is a deliberate, disclosed simplification for a demo: a real product would proxy the call through a backend so the key never touches the browser. Worth being able to explain that tradeoff if asked, rather than presenting client-side key entry as production-ready practice.
 
 ## Known limitations

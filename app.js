@@ -205,3 +205,4 @@ renderTierBar(scoredClients, filterState, toggleTierFilter);
 renderScoreChart(scoredClients);
 renderCategoryChart(scoredClients);
 render();
+showExampleInsights();
