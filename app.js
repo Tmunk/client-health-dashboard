@@ -99,18 +99,21 @@ function renderCard(client) {
   const div = document.createElement("div");
   div.className = "card";
   div.innerHTML = `
-    <div class="card-header ${client.tier}">
+    <button type="button" class="card-header ${client.tier}">
       <div class="card-header-top">
         <div>
           <p class="client-name">${client.clientName}</p>
           <p class="client-meta">${client.segment} · ${client.accountOwner}</p>
         </div>
-        <div class="score-block">
-          <div class="score-number ${client.tier}">${client.totalScore}</div>
-          ${trendMarkup(client)}
+        <div class="card-header-right">
+          <div class="score-block">
+            <div class="score-number ${client.tier}">${client.totalScore}</div>
+            ${trendMarkup(client)}
+          </div>
+          <span class="expand-chevron" aria-hidden="true">▾</span>
         </div>
       </div>
-    </div>
+    </button>
     <div class="card-body">
       ${gaugeRow("AM Sentiment", client.amSentimentPoints, 30)}
       ${gaugeRow("Platform Sessions", client.platformSessionsPoints, 30)}
@@ -124,6 +127,9 @@ function renderCard(client) {
       <div class="ai-summary" id="ai-summary-${client.id}"></div>
     </div>
   `;
+  div.querySelector(".card-header").addEventListener("click", () => {
+    div.classList.toggle("expanded");
+  });
   return div;
 }
 

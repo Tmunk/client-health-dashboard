@@ -480,8 +480,15 @@ header p {
 }
 
 .card-header {
+  display: block;
+  width: 100%;
   padding: 16px 18px;
+  border: none;
   border-bottom: 1px solid var(--border);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  color: inherit;
 }
 
 .card-header.green { background: var(--green-soft); }
@@ -493,6 +500,25 @@ header p {
   justify-content: space-between;
   align-items: flex-start;
   gap: 10px;
+}
+
+.card-header-right {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.expand-chevron {
+  color: var(--ink-soft);
+  font-size: 14px;
+  transition: transform 0.15s ease;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.card.expanded .expand-chevron {
+  transform: rotate(180deg);
 }
 
 .client-name {
@@ -544,6 +570,11 @@ header p {
 .card-body {
   padding: 16px 18px;
   flex: 1;
+  display: none;
+}
+
+.card.expanded .card-body {
+  display: block;
 }
 
 .gauge-row {
