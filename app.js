@@ -107,27 +107,13 @@ function render() {
   });
 }
 
-function renderSummaryChips() {
-  const counts = { green: 0, yellow: 0, red: 0 };
-  scoredClients.forEach((c) => counts[c.tier]++);
-
-  document.querySelectorAll(".summary-chip").forEach((chip) => {
-    const tier = chip.dataset.tier;
-    chip.querySelector(".count").textContent = counts[tier];
-    chip.classList.toggle("active", filterState.tier === tier);
-  });
+function toggleTierFilter(tier) {
+  filterState.tier = filterState.tier === tier ? null : tier;
+  renderTierBar(scoredClients, filterState, toggleTierFilter);
+  render();
 }
 
 function setupFilterControls() {
-  document.querySelectorAll(".summary-chip").forEach((chip) => {
-    chip.addEventListener("click", () => {
-      const tier = chip.dataset.tier;
-      filterState.tier = filterState.tier === tier ? null : tier;
-      renderSummaryChips();
-      render();
-    });
-  });
-
   const segmentSelect = document.getElementById("segmentFilter");
   const uniqueSegments = [...new Set(scoredClients.map((c) => c.segment))];
   uniqueSegments.forEach((s) => {
@@ -168,11 +154,14 @@ function setupFilterControls() {
     segmentSelect.value = "";
     amSelect.value = "";
     searchInput.value = "";
-    renderSummaryChips();
+    renderTierBar(scoredClients, filterState, toggleTierFilter);
     render();
   });
 }
 
 setupFilterControls();
-renderSummaryChips();
+renderKpiRow(scoredClients);
+renderTierBar(scoredClients, filterState, toggleTierFilter);
+renderScoreChart(scoredClients);
+renderCategoryChart(scoredClients);
 render();

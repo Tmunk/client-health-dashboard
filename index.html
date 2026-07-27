@@ -25,19 +25,28 @@
 </header>
 
 <div class="page">
-  <div class="controls-row">
-    <div class="summary-row">
-      <div class="summary-chip" data-tier="green">
-        <span class="dot green"></span> Green <span class="count">0</span>
+  <section class="overview">
+    <h2 class="section-title">Portfolio Overview</h2>
+    <div id="kpiRow" class="kpi-row"></div>
+    <div class="chart-grid">
+      <div class="chart-col">
+        <div class="chart-card">
+          <h3 class="chart-title">Accounts by tier</h3>
+          <div id="tierBar"></div>
+        </div>
+        <div class="chart-card">
+          <h3 class="chart-title">Category breakdown — portfolio average</h3>
+          <div id="categoryChart" class="hbar-chart"></div>
+        </div>
       </div>
-      <div class="summary-chip" data-tier="yellow">
-        <span class="dot yellow"></span> Yellow <span class="count">0</span>
-      </div>
-      <div class="summary-chip" data-tier="red">
-        <span class="dot red"></span> Red <span class="count">0</span>
+      <div class="chart-card">
+        <h3 class="chart-title">Score by account</h3>
+        <div id="scoreChart" class="hbar-chart"></div>
       </div>
     </div>
+  </section>
 
+  <div class="controls-row">
     <div class="filters toolbar-card">
       <div>
         <label for="segmentFilter">Segment</label>
@@ -65,6 +74,7 @@
 <script src="data.js"></script>
 <script src="scoring.js"></script>
 <script src="ai-summary.js"></script>
+<script src="charts.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
