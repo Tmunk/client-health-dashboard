@@ -5,16 +5,16 @@
      each other, just no longer pinned to the muted validated set. */
   --accent: #2f7ff2;
   --accent-soft: rgba(47, 127, 242, 0.12);
-  --green: #16c454;
-  --green-text: #0e7a34;
-  --green-bg: #e1f9e9;
-  --green-soft: rgba(22, 196, 84, 0.20);
-  --green-grad: linear-gradient(180deg, #2ee073, #16c454);
-  --yellow: #ff9f1a;
-  --yellow-text: #a3560a;
-  --yellow-bg: #ffefda;
-  --yellow-soft: rgba(255, 159, 26, 0.24);
-  --yellow-grad: linear-gradient(180deg, #ffb64d, #ff9f1a);
+  --green: #14b8a6;
+  --green-text: #0f766e;
+  --green-bg: #e1f9f5;
+  --green-soft: rgba(20, 184, 166, 0.20);
+  --green-grad: linear-gradient(180deg, #2dd4c4, #14b8a6);
+  --yellow: #f0b429;
+  --yellow-text: #92650c;
+  --yellow-bg: #fdf1da;
+  --yellow-soft: rgba(240, 180, 41, 0.26);
+  --yellow-grad: linear-gradient(180deg, #f8c650, #f0b429);
   --red: #ef4444;
   --red-text: #c62828;
   --red-bg: #fde3e3;
@@ -513,15 +513,23 @@ header p {
 }
 
 .score-number {
-  font-size: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 52px;
+  font-size: 20px;
   font-weight: 800;
   line-height: 1;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.01em;
+  color: #fff;
+  padding: 8px 14px;
+  border-radius: 999px;
+  box-shadow: 0 2px 6px rgba(11, 11, 11, 0.18), var(--mark-shadow);
 }
 
-.score-number.green { color: var(--green-text); }
-.score-number.yellow { color: var(--yellow-text); }
-.score-number.red { color: var(--red-text); }
+.score-number.green { background: var(--green); }
+.score-number.yellow { background: var(--yellow); }
+.score-number.red { background: var(--red); }
 
 .trend {
   font-size: 11.5px;

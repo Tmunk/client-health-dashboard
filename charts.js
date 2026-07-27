@@ -4,8 +4,8 @@
 // card grid and in these charts.
 
 const CHART_COLORS = {
-  good: "#16c454",
-  warning: "#ff9f1a",
+  good: "#14b8a6",
+  warning: "#f0b429",
   critical: "#ef4444",
   sequential: "#2f7ff2"
 };
@@ -13,8 +13,8 @@ const CHART_COLORS = {
 // Subtle top-to-bottom gradients of the same hues — flat fills on
 // bars/segments read as matte, this gives them a touch of depth instead.
 const CHART_GRADIENTS = {
-  good: "linear-gradient(180deg, #2ee073, #16c454)",
-  warning: "linear-gradient(180deg, #ffb64d, #ff9f1a)",
+  good: "linear-gradient(180deg, #2dd4c4, #14b8a6)",
+  warning: "linear-gradient(180deg, #f8c650, #f0b429)",
   critical: "linear-gradient(180deg, #f56a6a, #ef4444)",
   sequential: "linear-gradient(180deg, #5a9bf5, #2f7ff2)"
 };
