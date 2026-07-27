@@ -33,6 +33,49 @@ function trendMarkup(client) {
   return `<span class="trend ${direction}">${arrow} ${Math.abs(Math.round(delta))} vs. last period</span>`;
 }
 
+// Rule-based, not AI — computed straight from the score breakdown, so it's
+// free and instant. Identifies which category is furthest below its max
+// (the primary drag on the score) and, when another category is genuinely
+// strong (not just "less bad"), names that too.
+function primaryDriverText(client) {
+  const categories = [
+    {
+      ratio: client.amSentimentPoints / 30,
+      weak: "AM sentiment is weak",
+      strong: "AM sentiment is a strength"
+    },
+    {
+      ratio: client.platformSessionsPoints / 30,
+      weak: "platform usage is well below target",
+      strong: "platform usage is running ahead of target"
+    },
+    {
+      ratio: client.npsPoints / 30,
+      weak: "NPS is dragging the score down",
+      strong: "NPS is a strength"
+    },
+    {
+      ratio: client.newStudentsPoints / 10,
+      weak: "new student growth has stalled",
+      strong: "new student growth is strong"
+    }
+  ];
+
+  const weakest = categories.reduce((a, b) => (b.ratio < a.ratio ? b : a));
+
+  if (weakest.ratio >= 0.75) {
+    return "Consistently strong across every scoring category.";
+  }
+
+  const strongest = categories.reduce((a, b) => (b.ratio > a.ratio ? b : a));
+  const weakSentence = weakest.weak[0].toUpperCase() + weakest.weak.slice(1);
+
+  if (strongest.ratio >= 0.75 && strongest !== weakest) {
+    return `${weakSentence}; ${strongest.strong}.`;
+  }
+  return `${weakSentence}.`;
+}
+
 function gaugeRow(label, points, max) {
   const pct = Math.max(0, Math.min(100, (points / max) * 100));
   // Gauge fill color reflects how this single category is doing on its own
@@ -74,6 +117,7 @@ function renderCard(client) {
       ${gaugeRow("NPS", client.npsPoints, 30)}
       ${gaugeRow("New Students", client.newStudentsPoints, 10)}
       <span class="status-flag">${client.npsStatusFlag}</span>
+      <p class="driver-line">${primaryDriverText(client)}</p>
       <div class="playbook-banner" id="playbook-${client.id}"></div>
       <div class="ai-summary" id="ai-summary-${client.id}"></div>
     </div>
