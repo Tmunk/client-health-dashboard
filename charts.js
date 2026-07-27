@@ -9,10 +9,19 @@ const CHART_COLORS = {
   sequential: "#2a78d6"
 };
 
-function tierColor(tier) {
-  if (tier === "green") return CHART_COLORS.good;
-  if (tier === "yellow") return CHART_COLORS.warning;
-  return CHART_COLORS.critical;
+// Subtle top-to-bottom gradients of the same validated hues — flat fills on
+// bars/segments read as matte, this gives them a touch of depth instead.
+const CHART_GRADIENTS = {
+  good: "linear-gradient(180deg, #14bb14, #0ca30c)",
+  warning: "linear-gradient(180deg, #ffc23f, #fab219)",
+  critical: "linear-gradient(180deg, #de5252, #d03b3b)",
+  sequential: "linear-gradient(180deg, #468fe0, #2a78d6)"
+};
+
+function tierGradient(tier) {
+  if (tier === "green") return CHART_GRADIENTS.good;
+  if (tier === "yellow") return CHART_GRADIENTS.warning;
+  return CHART_GRADIENTS.critical;
 }
 
 // --- shared tooltip ---------------------------------------------------
@@ -113,22 +122,22 @@ function renderTierBar(clients, filterState, onToggle) {
   const total = clients.length;
 
   const order = [
-    { tier: "green", label: "Green", color: CHART_COLORS.good },
-    { tier: "yellow", label: "Yellow", color: CHART_COLORS.warning },
-    { tier: "red", label: "Red", color: CHART_COLORS.critical }
+    { tier: "green", label: "Green", color: CHART_COLORS.good, gradient: CHART_GRADIENTS.good },
+    { tier: "yellow", label: "Yellow", color: CHART_COLORS.warning, gradient: CHART_GRADIENTS.warning },
+    { tier: "red", label: "Red", color: CHART_COLORS.critical, gradient: CHART_GRADIENTS.critical }
   ];
 
   const track = document.createElement("div");
   track.className = "tier-bar-track";
 
-  order.forEach(({ tier, color }) => {
+  order.forEach(({ tier, gradient }) => {
     const count = counts[tier];
     if (count === 0) return;
     const seg = document.createElement("button");
     seg.type = "button";
     seg.className = "tier-bar-segment";
     seg.style.width = `${(count / total) * 100}%`;
-    seg.style.background = color;
+    seg.style.background = gradient;
     if (filterState.tier === tier) seg.classList.add("active");
     attachTooltip(seg, `${count} account${count === 1 ? "" : "s"}`, `${tier[0].toUpperCase()}${tier.slice(1)} tier`);
     seg.addEventListener("click", () => onToggle(tier));
@@ -174,7 +183,7 @@ function renderScoreChart(clients) {
     const bar = document.createElement("div");
     bar.className = "hbar-fill";
     bar.style.width = `${c.totalScore}%`;
-    bar.style.background = tierColor(c.tier);
+    bar.style.background = tierGradient(c.tier);
     attachTooltip(bar, `${c.totalScore} / 100`, `${c.clientName} — ${c.tier} tier`);
     bar.tabIndex = 0;
 
@@ -219,7 +228,7 @@ function renderCategoryChart(clients) {
     const bar = document.createElement("div");
     bar.className = "hbar-fill";
     bar.style.width = `${avgPct}%`;
-    bar.style.background = CHART_COLORS.sequential;
+    bar.style.background = CHART_GRADIENTS.sequential;
     attachTooltip(bar, `${avgPct.toFixed(0)}% of max`, `${cat.label} — portfolio average`);
     bar.tabIndex = 0;
 

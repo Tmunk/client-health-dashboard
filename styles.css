@@ -8,14 +8,19 @@
   --green: #0ca30c;
   --green-text: #006300;
   --green-bg: #e5f5e5;
-  --green-soft: rgba(12, 163, 12, 0.08);
+  --green-soft: rgba(12, 163, 12, 0.16);
+  --green-grad: linear-gradient(180deg, #14bb14, #0ca30c);
   --yellow: #fab219;
   --yellow-text: #966b00;
   --yellow-bg: #fdf1da;
-  --yellow-soft: rgba(250, 178, 25, 0.16);
+  --yellow-soft: rgba(250, 178, 25, 0.26);
+  --yellow-grad: linear-gradient(180deg, #ffc23f, #fab219);
   --red: #d03b3b;
   --red-bg: #fbe9e9;
-  --red-soft: rgba(208, 59, 59, 0.08);
+  --red-soft: rgba(208, 59, 59, 0.16);
+  --red-grad: linear-gradient(180deg, #de5252, #d03b3b);
+  --blue-grad: linear-gradient(180deg, #468fe0, #2a78d6);
+  --mark-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), inset 0 -1px 2px rgba(11, 11, 11, 0.12);
   --ink: #0b0b0b;
   --ink-soft: #52514e;
   --ink-muted: #898781;
@@ -265,6 +270,7 @@ header p {
   transition: filter 0.12s ease;
   outline: none;
   border-right: 2px solid var(--card-bg);
+  box-shadow: var(--mark-shadow);
 }
 
 .tier-bar-segment:last-child { border-right: none; }
@@ -340,6 +346,7 @@ header p {
   min-width: 3px;
   transition: width 0.5s ease;
   cursor: pointer;
+  box-shadow: var(--mark-shadow);
 }
 
 .hbar-fill:focus-visible {
@@ -561,11 +568,12 @@ header p {
   height: 100%;
   border-radius: 999px;
   transition: width 0.4s ease;
+  box-shadow: var(--mark-shadow);
 }
 
-.gauge-fill.green { background: var(--green); }
-.gauge-fill.yellow { background: var(--yellow); }
-.gauge-fill.red { background: var(--red); }
+.gauge-fill.green { background: var(--green-grad); }
+.gauge-fill.yellow { background: var(--yellow-grad); }
+.gauge-fill.red { background: var(--red-grad); }
 
 .status-flag {
   display: inline-block;
