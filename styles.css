@@ -1,22 +1,30 @@
 :root {
-  --accent: #3a8ea3;
-  --accent-soft: rgba(58, 142, 163, 0.12);
-  --green: #1e8e5a;
-  --green-bg: #e6f4ec;
-  --green-soft: rgba(30, 142, 90, 0.08);
-  --yellow: #b9860a;
-  --yellow-bg: #fbf1dc;
-  --yellow-soft: rgba(185, 134, 10, 0.08);
-  --red: #c0392b;
-  --red-bg: #fbe8e6;
-  --red-soft: rgba(192, 57, 43, 0.08);
-  --ink: #1c2128;
-  --ink-soft: #62697a;
-  --border: #e2e6eb;
-  --bg: #f5f7fa;
-  --card-bg: #ffffff;
-  --shadow: 0 1px 2px rgba(20, 24, 33, 0.04), 0 8px 20px -12px rgba(20, 24, 33, 0.12);
-  --shadow-hover: 0 4px 10px rgba(20, 24, 33, 0.06), 0 16px 32px -14px rgba(20, 24, 33, 0.18);
+  /* Colors below match the validated dataviz reference palette exactly —
+     same hex values as CHART_COLORS in charts.js — so a "red" account
+     reads as the same red everywhere in the app, not a different one in
+     the card grid than in the charts. */
+  --accent: #2a78d6;
+  --accent-soft: rgba(42, 120, 214, 0.10);
+  --green: #0ca30c;
+  --green-text: #006300;
+  --green-bg: #e5f5e5;
+  --green-soft: rgba(12, 163, 12, 0.08);
+  --yellow: #fab219;
+  --yellow-text: #966b00;
+  --yellow-bg: #fdf1da;
+  --yellow-soft: rgba(250, 178, 25, 0.16);
+  --red: #d03b3b;
+  --red-bg: #fbe9e9;
+  --red-soft: rgba(208, 59, 59, 0.08);
+  --ink: #0b0b0b;
+  --ink-soft: #52514e;
+  --ink-muted: #898781;
+  --border: #e1e0d9;
+  --bg: #f9f9f7;
+  --card-bg: #fcfcfb;
+  --success-text: #006300;
+  --shadow: 0 1px 2px rgba(11, 11, 11, 0.04), 0 8px 20px -12px rgba(11, 11, 11, 0.12);
+  --shadow-hover: 0 4px 10px rgba(11, 11, 11, 0.06), 0 16px 32px -14px rgba(11, 11, 11, 0.18);
   --radius: 12px;
 }
 
@@ -53,7 +61,7 @@ header .page {
   font-size: 11px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: #8fd0de;
+  color: #6fabe8;
   font-weight: 600;
   display: flex;
   align-items: center;
@@ -65,8 +73,8 @@ header .page {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #8fd0de;
-  box-shadow: 0 0 0 4px rgba(143, 208, 222, 0.18);
+  background: #6fabe8;
+  box-shadow: 0 0 0 4px rgba(57, 135, 229, 0.22);
 }
 
 header h1 {
@@ -247,7 +255,7 @@ header p {
   height: 28px;
   border-radius: 6px;
   overflow: hidden;
-  background: #edf0f4;
+  background: #eeece5;
 }
 
 .tier-bar-segment {
@@ -321,7 +329,7 @@ header p {
 
 .hbar-track {
   height: 16px;
-  background: #edf0f4;
+  background: #eeece5;
   border-radius: 0 4px 4px 0;
   position: relative;
 }
@@ -503,8 +511,8 @@ header p {
   letter-spacing: -0.02em;
 }
 
-.score-number.green { color: var(--green); }
-.score-number.yellow { color: var(--yellow); }
+.score-number.green { color: var(--green-text); }
+.score-number.yellow { color: var(--yellow-text); }
 .score-number.red { color: var(--red); }
 
 .trend {
@@ -513,7 +521,7 @@ header p {
   font-weight: 600;
 }
 
-.trend.up { color: var(--green); }
+.trend.up { color: var(--green-text); }
 .trend.down { color: var(--red); }
 .trend.flat { color: var(--ink-soft); }
 
@@ -544,7 +552,7 @@ header p {
 
 .gauge-track {
   height: 7px;
-  background: #edf0f4;
+  background: #eeece5;
   border-radius: 999px;
   overflow: hidden;
 }
