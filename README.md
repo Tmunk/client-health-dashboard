@@ -35,11 +35,13 @@ Tiers: **green ≥ 80, yellow 60–79, red < 60.**
 
 `data.js` holds the raw synthetic inputs per account; `scoring.js` is the only place that implements the formulas above.
 
-## The AI summary layer
+## The AI insights layer
 
-Clicking "Generate AI Summary" on any account sends its score breakdown to Claude and asks for a short, plain-English explanation plus one concrete next action — the kind of write-up an AM would otherwise type by hand before a QBR or a risk review.
+"Generate AI Insights" is a single API call, not one call per account. It sends all 14 accounts' score breakdowns to Claude in one request and asks for structured JSON back: a 2-3 sentence portfolio-level takeaway (rendered as a banner at the top) plus a one-line note per account (dropped into that account's card). Earlier versions of this had a "Generate AI Summary" button on every card — one API call each — which meant 14 near-identical buttons and up to 14 calls to look at the whole portfolio. Batching into one call is cheaper, faster, and removes the repetition.
 
-Accounts that drop into the red tier also show a **playbook trigger** banner ("schedule a save call within 3 business days"). That trigger is rule-based, fired off the tier alone — not AI-generated — simulating what a real implementation would hand off to an actual workflow tool (Slack alert, Salesforce task, etc).
+Accounts that drop into the red tier also show a **playbook trigger** banner ("schedule a save call within 3 business days"). That trigger is rule-based, fired off the tier alone — not AI-generated — simulating what a real implementation would hand off to an actual workflow tool (Slack alert, Salesforce task, etc). It's always visible for red accounts, no AI call required.
+
+Every card also shows a **primary driver line** (e.g. "NPS is dragging the score down; new student growth is strong") — also rule-based, computed from which scoring category is furthest below its max. It's free and instant, and gives every card genuinely distinct content even before the AI insights are generated.
 
 **On the API key:** this is a static site with no backend, so there's no server-side place to hide a key. The page asks whoever's using it to paste in their own Anthropic API key, which is stored only in that browser's `localStorage` and sent directly to `api.anthropic.com` — never to any third party, never committed to this repo. This is a deliberate, disclosed simplification for a demo: a real product would proxy the call through a backend so the key never touches the browser. Worth being able to explain that tradeoff if asked, rather than presenting client-side key entry as production-ready practice.
 
@@ -47,7 +49,7 @@ Accounts that drop into the red tier also show a **playbook trigger** banner ("s
 
 - **Category weights (30/30/30/10)** and the NPS failsafe formula match the real model. The specific per-account benchmarks used to normalize sessions and new-student counts (the "expected" values in `data.js`) are invented for this synthetic dataset, since real account-sizing data isn't something to reproduce here.
 - **Playbook trigger is simulated**, not wired to any real messaging or task system — it demonstrates the concept, not a working integration.
-- **No AI response caching** — every click makes a fresh API call, so repeated clicks on the same account cost tokens each time.
+- **No AI response caching** — every click on "Generate AI Insights" makes a fresh API call for the whole portfolio.
 - **Client-side API key** — see above. Fine for a portfolio demo, not how you'd ship this for real users.
 
 ## Running it
@@ -60,7 +62,7 @@ python -m http.server 8000
 
 Then visit `http://localhost:8000`. (Opening `index.html` directly via `file://` also works in a real browser — some sandboxed preview tools handle `file://` script loading inconsistently, which is a tool quirk, not an issue with the app.)
 
-To use the AI summary layer, paste an Anthropic API key into the box at the top of the page.
+To use the AI insights layer, paste an Anthropic API key into the box at the top of the page.
 
 ## Built with
 
