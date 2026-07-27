@@ -1,21 +1,22 @@
 // Portfolio-level data visualizations. Plain HTML/CSS bars, no chart library.
-// Colors come from the dataviz reference palette's fixed status/sequential
-// values (validated for colorblind-safety and contrast), not eyeballed.
+// Colors match the CSS custom properties in styles.css exactly (--green,
+// --yellow, --red, --accent) so a "red" account is the same red in the
+// card grid and in these charts.
 
 const CHART_COLORS = {
-  good: "#0ca30c",
-  warning: "#fab219",
-  critical: "#d03b3b",
-  sequential: "#2a78d6"
+  good: "#16c454",
+  warning: "#ff9f1a",
+  critical: "#ef4444",
+  sequential: "#2f7ff2"
 };
 
-// Subtle top-to-bottom gradients of the same validated hues — flat fills on
+// Subtle top-to-bottom gradients of the same hues — flat fills on
 // bars/segments read as matte, this gives them a touch of depth instead.
 const CHART_GRADIENTS = {
-  good: "linear-gradient(180deg, #14bb14, #0ca30c)",
-  warning: "linear-gradient(180deg, #ffc23f, #fab219)",
-  critical: "linear-gradient(180deg, #de5252, #d03b3b)",
-  sequential: "linear-gradient(180deg, #468fe0, #2a78d6)"
+  good: "linear-gradient(180deg, #2ee073, #16c454)",
+  warning: "linear-gradient(180deg, #ffb64d, #ff9f1a)",
+  critical: "linear-gradient(180deg, #f56a6a, #ef4444)",
+  sequential: "linear-gradient(180deg, #5a9bf5, #2f7ff2)"
 };
 
 function tierGradient(tier) {

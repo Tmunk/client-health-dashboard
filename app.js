@@ -118,11 +118,10 @@ function renderCard(client) {
       ${gaugeRow("New Students", client.newStudentsPoints, 10)}
       <span class="status-flag">${client.npsStatusFlag}</span>
       <p class="driver-line">${primaryDriverText(client)}</p>
-      <div class="playbook-banner" id="playbook-${client.id}"></div>
+      <div class="playbook-banner${client.tier === "red" ? " visible" : ""}">${
+        client.tier === "red" ? "🚨 Playbook triggered: schedule a save call within 3 business days." : ""
+      }</div>
       <div class="ai-summary" id="ai-summary-${client.id}"></div>
-    </div>
-    <div class="card-footer">
-      <button class="ai-btn" data-client-id="${client.id}">Generate AI Summary</button>
     </div>
   `;
   return div;
@@ -143,12 +142,7 @@ function render() {
     .sort((a, b) => a.totalScore - b.totalScore)
     .forEach((client) => grid.appendChild(renderCard(client)));
 
-  grid.querySelectorAll(".ai-btn").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const client = scoredClients.find((c) => c.id === btn.dataset.clientId);
-      generateAiSummary(client);
-    });
-  });
+  applyStoredInsights();
 }
 
 function toggleTierFilter(tier) {
@@ -202,6 +196,8 @@ function setupFilterControls() {
     render();
   });
 }
+
+document.getElementById("generateInsightsBtn").addEventListener("click", generateAllInsights);
 
 setupFilterControls();
 renderKpiRow(scoredClients);

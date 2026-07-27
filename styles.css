@@ -1,33 +1,34 @@
 :root {
-  /* Colors below match the validated dataviz reference palette exactly —
-     same hex values as CHART_COLORS in charts.js — so a "red" account
-     reads as the same red everywhere in the app, not a different one in
-     the card grid than in the charts. */
-  --accent: #2a78d6;
-  --accent-soft: rgba(42, 120, 214, 0.10);
-  --green: #0ca30c;
-  --green-text: #006300;
-  --green-bg: #e5f5e5;
-  --green-soft: rgba(12, 163, 12, 0.16);
-  --green-grad: linear-gradient(180deg, #14bb14, #0ca30c);
-  --yellow: #fab219;
-  --yellow-text: #966b00;
-  --yellow-bg: #fdf1da;
-  --yellow-soft: rgba(250, 178, 25, 0.26);
-  --yellow-grad: linear-gradient(180deg, #ffc23f, #fab219);
-  --red: #d03b3b;
-  --red-bg: #fbe9e9;
-  --red-soft: rgba(208, 59, 59, 0.16);
-  --red-grad: linear-gradient(180deg, #de5252, #d03b3b);
-  --blue-grad: linear-gradient(180deg, #468fe0, #2a78d6);
-  --mark-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), inset 0 -1px 2px rgba(11, 11, 11, 0.12);
+  /* Bolder, more saturated palette than the dataviz skill's fixed
+     accessibility-first status colors — same hex values shared with
+     CHART_COLORS in charts.js so cards and charts stay consistent with
+     each other, just no longer pinned to the muted validated set. */
+  --accent: #2f7ff2;
+  --accent-soft: rgba(47, 127, 242, 0.12);
+  --green: #16c454;
+  --green-text: #0e7a34;
+  --green-bg: #e1f9e9;
+  --green-soft: rgba(22, 196, 84, 0.20);
+  --green-grad: linear-gradient(180deg, #2ee073, #16c454);
+  --yellow: #ff9f1a;
+  --yellow-text: #a3560a;
+  --yellow-bg: #ffefda;
+  --yellow-soft: rgba(255, 159, 26, 0.24);
+  --yellow-grad: linear-gradient(180deg, #ffb64d, #ff9f1a);
+  --red: #ef4444;
+  --red-text: #c62828;
+  --red-bg: #fde3e3;
+  --red-soft: rgba(239, 68, 68, 0.20);
+  --red-grad: linear-gradient(180deg, #f56a6a, #ef4444);
+  --blue-grad: linear-gradient(180deg, #5a9bf5, #2f7ff2);
+  --mark-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4), inset 0 -1px 2px rgba(11, 11, 11, 0.15);
   --ink: #0b0b0b;
   --ink-soft: #52514e;
   --ink-muted: #898781;
   --border: #e1e0d9;
   --bg: #f9f9f7;
   --card-bg: #fcfcfb;
-  --success-text: #006300;
+  --success-text: #0e7a34;
   --shadow: 0 1px 2px rgba(11, 11, 11, 0.04), 0 8px 20px -12px rgba(11, 11, 11, 0.12);
   --shadow-hover: 0 4px 10px rgba(11, 11, 11, 0.06), 0 16px 32px -14px rgba(11, 11, 11, 0.18);
   --radius: 12px;
@@ -221,8 +222,8 @@ header p {
   font-weight: 600;
 }
 
-.stat-delta.good { color: #006300; }
-.stat-delta.bad { color: var(--red); }
+.stat-delta.good { color: var(--green-text); }
+.stat-delta.bad { color: var(--red-text); }
 .stat-delta.neutral { color: var(--ink-soft); }
 
 .chart-grid {
@@ -520,7 +521,7 @@ header p {
 
 .score-number.green { color: var(--green-text); }
 .score-number.yellow { color: var(--yellow-text); }
-.score-number.red { color: var(--red); }
+.score-number.red { color: var(--red-text); }
 
 .trend {
   font-size: 11.5px;
@@ -529,7 +530,7 @@ header p {
 }
 
 .trend.up { color: var(--green-text); }
-.trend.down { color: var(--red); }
+.trend.down { color: var(--red-text); }
 .trend.flat { color: var(--ink-soft); }
 
 .card-body {
@@ -594,9 +595,32 @@ header p {
   color: var(--ink-soft);
 }
 
-.card-footer {
-  padding: 14px 18px 18px;
-  border-top: 1px solid var(--border);
+.ai-insights-card {
+  margin-bottom: 16px;
+  background: linear-gradient(135deg, var(--card-bg), var(--accent-soft));
+}
+
+.ai-insights-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 4px;
+}
+
+.ai-insights-header .chart-title {
+  margin: 0;
+}
+
+.ai-insights-header .ai-btn {
+  width: auto;
+  white-space: nowrap;
+}
+
+.ai-insights-hint {
+  margin: 0 0 4px;
+  font-size: 12.5px;
+  color: var(--ink-soft);
 }
 
 .ai-btn {
@@ -640,7 +664,7 @@ header p {
   margin-top: 10px;
   background: var(--red-bg);
   border: 1px solid var(--red);
-  color: var(--red);
+  color: var(--red-text);
   font-size: 12px;
   font-weight: 700;
   padding: 8px 12px;

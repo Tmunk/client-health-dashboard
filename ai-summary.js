@@ -1,4 +1,4 @@
-// AI summary layer.
+// AI insights layer — a single batch call, not one call per account.
 //
 // Calls the Claude API directly from the browser using a key the viewer
 // supplies themselves (stored only in localStorage, never in this repo).
@@ -6,6 +6,10 @@
 // see the README for the tradeoffs and why a real product wouldn't do this.
 
 const API_KEY_STORAGE_KEY = "clientHealthDashboard_apiKey";
+
+// Populated after a successful generate; re-applied by app.js whenever the
+// card grid re-renders (e.g. after changing a filter) so notes survive.
+let aiInsightsByClientId = {};
 
 function getStoredApiKey() {
   return localStorage.getItem(API_KEY_STORAGE_KEY) || "";
@@ -38,52 +42,60 @@ function setupApiKeyBar() {
   });
 }
 
-function buildPrompt(client) {
-  return `You are a CS Ops assistant summarizing one account's health score for an Account Manager.
-Respond in 2-3 short sentences: what's driving the score, and one concrete next action. No headers, no bullet points, plain prose.
+// One compact line per account keeps the prompt (and token cost) small
+// even across 14 accounts, instead of the verbose per-account prompt this
+// replaced.
+function buildBatchPrompt(clients) {
+  const lines = clients
+    .map((c) => {
+      const trend = `${c.trendDelta >= 0 ? "+" : ""}${Math.round(c.trendDelta)}`;
+      return `${c.id}|${c.clientName}|tier:${c.tier}|score:${c.totalScore}|trend:${trend}|AM:${c.amSentimentPoints.toFixed(
+        0
+      )}/30|Sessions:${c.platformSessionsPoints.toFixed(0)}/30|NPS:${c.npsPoints.toFixed(0)}/30(${
+        c.npsStatusFlag
+      })|NewStudents:${c.newStudentsPoints.toFixed(0)}/10`;
+    })
+    .join("\n");
 
-Account: ${client.clientName} (${client.segment})
-Total score: ${client.totalScore}/100 (tier: ${client.tier})
-Trend: ${client.trendDelta >= 0 ? "+" : ""}${Math.round(client.trendDelta)} vs. last period
-Breakdown:
-- AM Sentiment: ${client.amSentimentPoints.toFixed(1)}/30
-- Platform Sessions: ${client.platformSessionsPoints.toFixed(1)}/30 (${client.actualSessions} actual vs ${client.expectedSessions} expected)
-- NPS: ${client.npsPoints.toFixed(1)}/30 (${client.npsStatusFlag})
-- New Students: ${client.newStudentsPoints.toFixed(1)}/10 (${client.newStudentsActual} actual vs ${client.newStudentsTarget} target)`;
+  return `You are a CS Ops assistant reviewing this period's health scores for ${clients.length} EdTech tutoring accounts. Score = AM Sentiment (30) + Platform Sessions (30) + NPS (30) + New Students (10).
+
+${lines}
+
+Respond with ONLY valid JSON, no markdown fences, no extra text, matching this exact shape:
+{
+  "portfolio_summary": "2-3 sentences: overall portfolio health, the biggest risk theme, and any notable trend across accounts",
+  "accounts": [
+    { "id": "c001", "note": "one short sentence: what's driving this account's score and one concrete next action, under 25 words" }
+  ]
+}
+Include exactly one entry in "accounts" for every account id listed above.`;
 }
 
-// Rule-based, not AI — a real risk-scoring platform would wire this to an
-// actual workflow tool (Slack, Salesforce task, etc). Here it's a simulated
-// trigger fired purely off the tier, to show what the dashboard would kick
-// off downstream.
-function maybeShowPlaybookTrigger(client) {
-  const banner = document.getElementById(`playbook-${client.id}`);
-  if (client.tier === "red") {
-    banner.textContent = "🚨 Playbook triggered: schedule a save call within 3 business days.";
-    banner.classList.add("visible");
-  } else {
-    banner.classList.remove("visible");
-    banner.textContent = "";
-  }
+function applyStoredInsights() {
+  Object.entries(aiInsightsByClientId).forEach(([id, note]) => {
+    const box = document.getElementById(`ai-summary-${id}`);
+    if (box && note) {
+      box.textContent = note;
+      box.classList.add("visible");
+    }
+  });
 }
 
-async function generateAiSummary(client) {
-  const summaryBox = document.getElementById(`ai-summary-${client.id}`);
-  const button = document.querySelector(`.ai-btn[data-client-id="${client.id}"]`);
+async function generateAllInsights() {
+  const btn = document.getElementById("generateInsightsBtn");
+  const banner = document.getElementById("portfolioSummaryBanner");
   const apiKey = getStoredApiKey();
 
-  maybeShowPlaybookTrigger(client);
-
   if (!apiKey) {
-    summaryBox.textContent = "Add your Claude API key at the top of the page to generate a summary.";
-    summaryBox.classList.add("visible");
+    banner.textContent = "Add your Claude API key at the top of the page to generate insights.";
+    banner.classList.add("visible");
     return;
   }
 
-  const originalLabel = button.textContent;
-  button.disabled = true;
-  button.textContent = "Generating...";
-  summaryBox.classList.remove("visible");
+  const originalLabel = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = "Generating...";
+  banner.classList.remove("visible");
 
   try {
     const response = await fetch("https://api.anthropic.com/v1/messages", {
@@ -96,8 +108,8 @@ async function generateAiSummary(client) {
       },
       body: JSON.stringify({
         model: "claude-sonnet-5",
-        max_tokens: 200,
-        messages: [{ role: "user", content: buildPrompt(client) }]
+        max_tokens: 1200,
+        messages: [{ role: "user", content: buildBatchPrompt(scoredClients) }]
       })
     });
 
@@ -109,14 +121,24 @@ async function generateAiSummary(client) {
 
     const data = await response.json();
     const textBlock = (data.content || []).find((b) => b.type === "text");
-    summaryBox.textContent = textBlock ? textBlock.text.trim() : "No summary returned.";
-    summaryBox.classList.add("visible");
+    const raw = textBlock ? textBlock.text.trim() : "";
+    const cleaned = raw.replace(/```json|```/g, "").trim();
+    const parsed = JSON.parse(cleaned);
+
+    banner.textContent = parsed.portfolio_summary || "No summary returned.";
+    banner.classList.add("visible");
+
+    aiInsightsByClientId = {};
+    (parsed.accounts || []).forEach((entry) => {
+      if (entry && entry.id) aiInsightsByClientId[entry.id] = entry.note || "";
+    });
+    applyStoredInsights();
   } catch (err) {
-    summaryBox.textContent = `Couldn't generate a summary: ${err.message}`;
-    summaryBox.classList.add("visible");
+    banner.textContent = `Couldn't generate insights: ${err.message}`;
+    banner.classList.add("visible");
   } finally {
-    button.disabled = false;
-    button.textContent = originalLabel;
+    btn.disabled = false;
+    btn.textContent = originalLabel;
   }
 }
 
