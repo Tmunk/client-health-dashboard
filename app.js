@@ -1,0 +1,178 @@
+// Dashboard rendering + cross-filtering.
+// scoring.js and data.js load before this file (see index.html).
+
+const scoredClients = scoreAllClients(CLIENTS);
+
+const filterState = {
+  tier: null,      // "green" | "yellow" | "red" | null
+  segment: null,   // string | null
+  accountOwner: null, // string | null
+  search: ""
+};
+
+function applyFilters(clients) {
+  return clients.filter((c) => {
+    if (filterState.tier && c.tier !== filterState.tier) return false;
+    if (filterState.segment && c.segment !== filterState.segment) return false;
+    if (filterState.accountOwner && c.accountOwner !== filterState.accountOwner) return false;
+    if (filterState.search) {
+      const q = filterState.search.toLowerCase();
+      if (!c.clientName.toLowerCase().includes(q)) return false;
+    }
+    return true;
+  });
+}
+
+function trendMarkup(client) {
+  const delta = client.trendDelta;
+  if (Math.abs(delta) < 0.5) {
+    return `<span class="trend flat">flat vs. last period</span>`;
+  }
+  const direction = delta > 0 ? "up" : "down";
+  const arrow = delta > 0 ? "▲" : "▼";
+  return `<span class="trend ${direction}">${arrow} ${Math.abs(Math.round(delta))} vs. last period</span>`;
+}
+
+function gaugeRow(label, points, max) {
+  const pct = Math.max(0, Math.min(100, (points / max) * 100));
+  // Gauge fill color reflects how this single category is doing on its own
+  // scale, independent of the account's overall tier.
+  const ratio = points / max;
+  const color = ratio >= 0.8 ? "green" : ratio >= 0.6 ? "yellow" : "red";
+  return `
+    <div class="gauge-row">
+      <div class="gauge-label">
+        <span>${label}</span>
+        <span>${points.toFixed(1)} / ${max}</span>
+      </div>
+      <div class="gauge-track">
+        <div class="gauge-fill ${color}" style="width:${pct}%"></div>
+      </div>
+    </div>
+  `;
+}
+
+function renderCard(client) {
+  const div = document.createElement("div");
+  div.className = "card";
+  div.innerHTML = `
+    <div class="card-header ${client.tier}">
+      <div class="card-header-top">
+        <div>
+          <p class="client-name">${client.clientName}</p>
+          <p class="client-meta">${client.segment} · ${client.accountOwner}</p>
+        </div>
+        <div class="score-block">
+          <div class="score-number ${client.tier}">${client.totalScore}</div>
+          ${trendMarkup(client)}
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      ${gaugeRow("AM Sentiment", client.amSentimentPoints, 30)}
+      ${gaugeRow("Platform Sessions", client.platformSessionsPoints, 30)}
+      ${gaugeRow("NPS", client.npsPoints, 30)}
+      ${gaugeRow("New Students", client.newStudentsPoints, 10)}
+      <span class="status-flag">${client.npsStatusFlag}</span>
+      <div class="playbook-banner" id="playbook-${client.id}"></div>
+      <div class="ai-summary" id="ai-summary-${client.id}"></div>
+    </div>
+    <div class="card-footer">
+      <button class="ai-btn" data-client-id="${client.id}">Generate AI Summary</button>
+    </div>
+  `;
+  return div;
+}
+
+function render() {
+  const grid = document.getElementById("clientGrid");
+  grid.innerHTML = "";
+  const visible = applyFilters(scoredClients);
+
+  if (visible.length === 0) {
+    grid.innerHTML = `<div class="empty-state">No accounts match the current filters.</div>`;
+    return;
+  }
+
+  visible
+    .slice()
+    .sort((a, b) => a.totalScore - b.totalScore)
+    .forEach((client) => grid.appendChild(renderCard(client)));
+
+  grid.querySelectorAll(".ai-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const client = scoredClients.find((c) => c.id === btn.dataset.clientId);
+      generateAiSummary(client);
+    });
+  });
+}
+
+function renderSummaryChips() {
+  const counts = { green: 0, yellow: 0, red: 0 };
+  scoredClients.forEach((c) => counts[c.tier]++);
+
+  document.querySelectorAll(".summary-chip").forEach((chip) => {
+    const tier = chip.dataset.tier;
+    chip.querySelector(".count").textContent = counts[tier];
+    chip.classList.toggle("active", filterState.tier === tier);
+  });
+}
+
+function setupFilterControls() {
+  document.querySelectorAll(".summary-chip").forEach((chip) => {
+    chip.addEventListener("click", () => {
+      const tier = chip.dataset.tier;
+      filterState.tier = filterState.tier === tier ? null : tier;
+      renderSummaryChips();
+      render();
+    });
+  });
+
+  const segmentSelect = document.getElementById("segmentFilter");
+  const uniqueSegments = [...new Set(scoredClients.map((c) => c.segment))];
+  uniqueSegments.forEach((s) => {
+    const opt = document.createElement("option");
+    opt.value = s;
+    opt.textContent = s;
+    segmentSelect.appendChild(opt);
+  });
+  segmentSelect.addEventListener("change", () => {
+    filterState.segment = segmentSelect.value || null;
+    render();
+  });
+
+  const amSelect = document.getElementById("amFilter");
+  const uniqueAms = [...new Set(scoredClients.map((c) => c.accountOwner))];
+  uniqueAms.forEach((am) => {
+    const opt = document.createElement("option");
+    opt.value = am;
+    opt.textContent = am;
+    amSelect.appendChild(opt);
+  });
+  amSelect.addEventListener("change", () => {
+    filterState.accountOwner = amSelect.value || null;
+    render();
+  });
+
+  const searchInput = document.getElementById("searchInput");
+  searchInput.addEventListener("input", () => {
+    filterState.search = searchInput.value;
+    render();
+  });
+
+  document.getElementById("clearFilters").addEventListener("click", () => {
+    filterState.tier = null;
+    filterState.segment = null;
+    filterState.accountOwner = null;
+    filterState.search = "";
+    segmentSelect.value = "";
+    amSelect.value = "";
+    searchInput.value = "";
+    renderSummaryChips();
+    render();
+  });
+}
+
+setupFilterControls();
+renderSummaryChips();
+render();

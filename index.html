@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Client Health Dashboard</title>
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<header>
+  <div class="page">
+    <span class="eyebrow">CS Ops · Account Health</span>
+    <h1>Client Health Dashboard</h1>
+    <p>Synthetic data — fictional EdTech tutoring accounts. Score = AM Sentiment (30) + Platform Sessions (30) + NPS (30) + New Students (10).</p>
+
+    <div id="apiKeyBar" class="toolbar-card">
+      <label for="apiKeyInput">Claude API key (for AI Summary)</label>
+      <input type="password" id="apiKeyInput" placeholder="sk-ant-..." autocomplete="off" />
+      <button id="saveKeyBtn">Save</button>
+      <button id="clearKeyBtn">Clear</button>
+      <span id="apiKeyStatus">Stored only in this browser's localStorage. See README for details.</span>
+    </div>
+  </div>
+</header>
+
+<div class="page">
+  <div class="controls-row">
+    <div class="summary-row">
+      <div class="summary-chip" data-tier="green">
+        <span class="dot green"></span> Green <span class="count">0</span>
+      </div>
+      <div class="summary-chip" data-tier="yellow">
+        <span class="dot yellow"></span> Yellow <span class="count">0</span>
+      </div>
+      <div class="summary-chip" data-tier="red">
+        <span class="dot red"></span> Red <span class="count">0</span>
+      </div>
+    </div>
+
+    <div class="filters toolbar-card">
+      <div>
+        <label for="segmentFilter">Segment</label>
+        <select id="segmentFilter">
+          <option value="">All segments</option>
+        </select>
+      </div>
+      <div>
+        <label for="amFilter">Account Owner</label>
+        <select id="amFilter">
+          <option value="">All owners</option>
+        </select>
+      </div>
+      <div>
+        <label for="searchInput">Search</label>
+        <input type="text" id="searchInput" placeholder="Client name..." />
+      </div>
+      <button id="clearFilters">Clear filters</button>
+    </div>
+  </div>
+
+  <div id="clientGrid"></div>
+</div>
+
+<script src="data.js"></script>
+<script src="scoring.js"></script>
+<script src="ai-summary.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
