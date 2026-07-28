@@ -1,7 +1,12 @@
 // Dashboard rendering + cross-filtering.
-// scoring.js and data.js load before this file (see index.html).
+// config.js, fallback-data.js, adapters.js, pipeline.js and scoring.js all
+// load before this file (see index.html).
+//
+// Client data is no longer a hardcoded array — it comes from runPipeline(),
+// which loads three independent sources, validates them, and joins them.
 
-const scoredClients = scoreAllClients(CLIENTS);
+let scoredClients = [];
+let lastPipelineResult = null;
 
 const filterState = {
   tier: null,      // "green" | "yellow" | "red" | null
@@ -9,6 +14,17 @@ const filterState = {
   accountOwner: null, // string | null
   search: ""
 };
+
+// Client names, segments and owners now arrive from an external sheet rather
+// than a hardcoded array, so anything interpolated into markup gets escaped.
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
 
 function applyFilters(clients) {
   return clients.filter((c) => {
@@ -102,8 +118,8 @@ function renderCard(client) {
     <button type="button" class="card-header ${client.tier}">
       <div class="card-header-top">
         <div>
-          <p class="client-name">${client.clientName}</p>
-          <p class="client-meta">${client.segment} · ${client.accountOwner}</p>
+          <p class="client-name">${escapeHtml(client.clientName)}</p>
+          <p class="client-meta">${escapeHtml(client.segment)} · ${escapeHtml(client.accountOwner)}</p>
         </div>
         <div class="card-header-right">
           <div class="score-block">
@@ -121,12 +137,26 @@ function renderCard(client) {
       ${gaugeRow("New Students", client.newStudentsPoints, 10)}
       <span class="status-flag">${client.npsStatusFlag}</span>
       <p class="driver-line">${primaryDriverText(client)}</p>
+      ${
+        client.amNotes
+          ? `<div class="am-notes">
+               <span class="am-notes-label">AM notes</span>
+               <p class="am-notes-body"></p>
+             </div>`
+          : ""
+      }
       <div class="playbook-banner${client.tier === "red" ? " visible" : ""}">${
         client.tier === "red" ? "🚨 Playbook triggered: schedule a save call within 3 business days." : ""
       }</div>
       <div class="ai-summary" id="ai-summary-${client.id}"></div>
     </div>
   `;
+  // Notes are free text typed into a spreadsheet by an AM — treat as untrusted
+  // and set as text, never as markup.
+  if (client.amNotes) {
+    div.querySelector(".am-notes-body").textContent = client.amNotes;
+  }
+
   div.querySelector(".card-header").addEventListener("click", () => {
     div.classList.toggle("expanded");
   });
@@ -203,12 +233,105 @@ function setupFilterControls() {
   });
 }
 
-document.getElementById("generateInsightsBtn").addEventListener("click", generateAllInsights);
+function renderDataSources(result) {
+  const container = document.getElementById("sourceList");
+  container.innerHTML = "";
 
-setupFilterControls();
-renderKpiRow(scoredClients);
-renderTierBar(scoredClients, filterState, toggleTierFilter);
-renderScoreChart(scoredClients);
-renderCategoryChart(scoredClients);
-render();
-showExampleInsights();
+  result.sources.forEach((source) => {
+    const item = document.createElement("div");
+    item.className = `source-item ${source.mode}`;
+    const time = source.fetchedAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    item.innerHTML = `
+      <span class="source-dot"></span>
+      <div class="source-meta">
+        <span class="source-name"></span>
+        <span class="source-detail">${source.validRows} records · ${
+          source.mode === "live" ? "live sheet" : "bundled fallback"
+        } · ${time}</span>
+      </div>
+    `;
+    item.querySelector(".source-name").textContent = source.label;
+    container.appendChild(item);
+  });
+
+  const issuesBox = document.getElementById("dataIssues");
+  issuesBox.innerHTML = "";
+
+  if (result.issues.length === 0) {
+    issuesBox.innerHTML = `<p class="issues-clean">No data quality issues found across all three sources.</p>`;
+    return;
+  }
+
+  const errors = result.issues.filter((i) => i.severity === "error").length;
+  const warnings = result.issues.length - errors;
+
+  const summary = document.createElement("button");
+  summary.type = "button";
+  summary.className = "issues-toggle";
+  summary.textContent = `${result.issues.length} data quality ${
+    result.issues.length === 1 ? "issue" : "issues"
+  } found (${errors} error${errors === 1 ? "" : "s"}, ${warnings} warning${
+    warnings === 1 ? "" : "s"
+  }) — show detail`;
+
+  const list = document.createElement("ul");
+  list.className = "issues-list";
+  result.issues.forEach((issue) => {
+    const li = document.createElement("li");
+    li.className = `issue ${issue.severity}`;
+    const tag = document.createElement("span");
+    tag.className = `issue-tag ${issue.severity}`;
+    tag.textContent = issue.severity;
+    const text = document.createElement("span");
+    text.textContent = `${issue.source}${issue.clientId ? ` · ${issue.clientId}` : ""} — ${issue.message}`;
+    li.appendChild(tag);
+    li.appendChild(text);
+    list.appendChild(li);
+  });
+
+  summary.addEventListener("click", () => {
+    list.classList.toggle("visible");
+  });
+
+  issuesBox.appendChild(summary);
+  issuesBox.appendChild(list);
+}
+
+function renderAll() {
+  renderKpiRow(scoredClients);
+  renderTierBar(scoredClients, filterState, toggleTierFilter);
+  renderScoreChart(scoredClients);
+  renderCategoryChart(scoredClients);
+  render();
+}
+
+async function loadAndRender() {
+  const btn = document.getElementById("refreshDataBtn");
+  const originalLabel = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = "Loading...";
+
+  try {
+    lastPipelineResult = await runPipeline();
+    scoredClients = scoreAllClients(lastPipelineResult.clients);
+    renderDataSources(lastPipelineResult);
+    renderAll();
+  } finally {
+    btn.disabled = false;
+    btn.textContent = originalLabel;
+  }
+}
+
+async function init() {
+  document.getElementById("generateInsightsBtn").addEventListener("click", generateAllInsights);
+  document.getElementById("refreshDataBtn").addEventListener("click", loadAndRender);
+
+  await loadAndRender();
+
+  // Filter dropdowns are populated from the loaded data, so they're wired up
+  // after the first successful load rather than before it.
+  setupFilterControls();
+  showExampleInsights();
+}
+
+init();

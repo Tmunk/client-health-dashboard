@@ -26,6 +26,20 @@
 
 <div class="page">
   <section class="overview">
+    <h2 class="section-title">Data Sources</h2>
+
+    <div class="chart-card sources-card">
+      <div class="sources-header">
+        <div>
+          <h3 class="chart-title">Three independent sources, joined and validated</h3>
+          <p class="sources-hint">Session data, client-reported NPS, and AM sentiment each load separately, get schema-checked, then join on client ID. See ARCHITECTURE.md for how this maps to the original Google Sheets setup.</p>
+        </div>
+        <button id="refreshDataBtn" class="ai-btn">Refresh data</button>
+      </div>
+      <div id="sourceList" class="source-list"></div>
+      <div id="dataIssues" class="data-issues"></div>
+    </div>
+
     <h2 class="section-title">Portfolio Overview</h2>
 
     <div class="chart-card ai-insights-card">
@@ -81,7 +95,10 @@
   <div id="clientGrid"></div>
 </div>
 
-<script src="data.js"></script>
+<script src="config.js"></script>
+<script src="fallback-data.js"></script>
+<script src="adapters.js"></script>
+<script src="pipeline.js"></script>
 <script src="scoring.js"></script>
 <script src="ai-summary.js"></script>
 <script src="charts.js"></script>
