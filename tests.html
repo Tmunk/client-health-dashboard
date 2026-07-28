@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Client Health Dashboard — tests</title>
+<style>
+  body { font-family: -apple-system, "Segoe UI", sans-serif; max-width: 760px; margin: 40px auto; padding: 0 20px; color: #0b0b0b; background: #fcfcfb; }
+  h1 { font-size: 20px; }
+  .summary { font-size: 15px; font-weight: 700; padding: 10px 14px; border-radius: 8px; margin: 16px 0; }
+  .summary.pass { background: #e1f9f5; color: #0f766e; }
+  .summary.fail { background: #fde3e3; color: #c62828; }
+  .group { margin: 0 0 6px; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: #52514e; margin-top: 24px; }
+  ul { list-style: none; padding: 0; margin: 0; }
+  li { padding: 6px 0; font-size: 13.5px; border-bottom: 1px solid #e1e0d9; }
+  .pass-mark { color: #0f766e; font-weight: 700; margin-right: 6px; }
+  .fail-mark { color: #c62828; font-weight: 700; margin-right: 6px; }
+  .fail-detail { display: block; color: #c62828; font-size: 12px; margin-top: 3px; margin-left: 20px; }
+</style>
+</head>
+<body>
+
+<h1>Client Health Dashboard — test suite</h1>
+<p>No framework, no build step — plain assertions against the real <code>scoring.js</code> and <code>pipeline.js</code> loaded below. Open this file directly to run.</p>
+
+<div id="summary" class="summary">Running...</div>
+<div id="results"></div>
+
+<script src="config.js"></script>
+<script src="fallback-data.js"></script>
+<script src="adapters.js"></script>
+<script src="pipeline.js"></script>
+<script src="scoring.js"></script>
+
+<script>
+const results = [];
+
+function test(group, name, fn) {
+  try {
+    fn();
+    results.push({ group, name, pass: true });
+  } catch (err) {
+    results.push({ group, name, pass: false, detail: err.message });
+  }
+}
+
+function assert(condition, message) {
+  if (!condition) throw new Error(message || "assertion failed");
+}
+
+function assertEqual(actual, expected, label) {
+  if (actual !== expected) {
+    throw new Error(`${label || "value"}: expected ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}`);
+  }
+}
+
+function baseClient(overrides) {
+  return Object.assign(
+    {
+      id: "t1",
+      clientName: "Test Co",
+      segment: "SMB",
+      accountOwner: "T. Ester",
+      amSentimentRating: 5,
+      actualSessions: 100,
+      expectedSessions: 100,
+      npsSurveyScore: 8,
+      npsAmEstimatePoints: 20,
+      newStudentsActual: 5,
+      newStudentsTarget: 5,
+      previousTotalScore: 70
+    },
+    overrides
+  );
+}
+
+// --- scoring.js: NPS failsafe --------------------------------------------
+
+test("Scoring — NPS failsafe", "uses survey score x3 when present", () => {
+  const scored = scoreClient(baseClient({ npsSurveyScore: 7, npsAmEstimatePoints: 15 }));
+  assertEqual(scored.npsPoints, 21, "npsPoints");
+  assertEqual(scored.npsStatusFlag, "✅ Actual Survey", "npsStatusFlag");
+});
+
+test("Scoring — NPS failsafe", "falls back to AM estimate when survey is null", () => {
+  const scored = scoreClient(baseClient({ npsSurveyScore: null, npsAmEstimatePoints: 15 }));
+  assertEqual(scored.npsPoints, 15, "npsPoints");
+  assertEqual(scored.npsStatusFlag, "⚠️ AM Estimate", "npsStatusFlag");
+});
+
+test("Scoring — NPS failsafe", "falls back to AM estimate when survey is undefined", () => {
+  const client = baseClient();
+  delete client.npsSurveyScore;
+  const scored = scoreClient(client);
+  assertEqual(scored.npsStatusFlag, "⚠️ AM Estimate", "npsStatusFlag");
+});
+
+// --- scoring.js: category clamps ------------------------------------------
+
+test("Scoring — clamps", "platform sessions caps at 30 even when actual exceeds expected", () => {
+  const scored = scoreClient(baseClient({ actualSessions: 500, expectedSessions: 100 }));
+  assertEqual(scored.platformSessionsPoints, 30, "platformSessionsPoints");
+});
+
+test("Scoring — clamps", "platform sessions floors at 0, never negative", () => {
+  const scored = scoreClient(baseClient({ actualSessions: 0, expectedSessions: 100 }));
+  assert(scored.platformSessionsPoints === 0, "expected 0, got " + scored.platformSessionsPoints);
+});
+
+test("Scoring — clamps", "new students caps at 10 even when actual exceeds target", () => {
+  const scored = scoreClient(baseClient({ newStudentsActual: 50, newStudentsTarget: 5 }));
+  assertEqual(scored.newStudentsPoints, 10, "newStudentsPoints");
+});
+
+test("Scoring — clamps", "AM sentiment scales linearly, 1 rating = 6 points", () => {
+  const scored = scoreClient(baseClient({ amSentimentRating: 1 }));
+  assertEqual(scored.amSentimentPoints, 6, "amSentimentPoints");
+});
+
+// --- scoring.js: tier boundaries -------------------------------------------
+// Each fixture below is hand-computed to land on an exact total: rating*6
+// for AM sentiment, actual/expected*30 for sessions (clamped 0-30), the raw
+// AM estimate for NPS (no survey), actual/target*10 for new students.
+
+test("Scoring — tiers", "80 is green, the inclusive lower boundary (30 + 30 + 20 + 0)", () => {
+  const scored = scoreClient(baseClient({ amSentimentRating: 5, actualSessions: 25, expectedSessions: 25, npsSurveyScore: null, npsAmEstimatePoints: 20, newStudentsActual: 0, newStudentsTarget: 1 }));
+  assertEqual(scored.totalScore, 80, "totalScore");
+  assertEqual(scored.tier, "green", "tier");
+});
+
+test("Scoring — tiers", "79 is yellow, one point below the green boundary (24 + 30 + 25 + 0)", () => {
+  const scored = scoreClient(baseClient({ amSentimentRating: 4, actualSessions: 25, expectedSessions: 25, npsSurveyScore: null, npsAmEstimatePoints: 25, newStudentsActual: 0, newStudentsTarget: 1 }));
+  assertEqual(scored.totalScore, 79, "totalScore");
+  assertEqual(scored.tier, "yellow", "tier");
+});
+
+test("Scoring — tiers", "60 is yellow, the inclusive lower boundary (30 + 0 + 30 + 0)", () => {
+  const scored = scoreClient(baseClient({ amSentimentRating: 5, actualSessions: 0, expectedSessions: 1, npsSurveyScore: null, npsAmEstimatePoints: 30, newStudentsActual: 0, newStudentsTarget: 1 }));
+  assertEqual(scored.totalScore, 60, "totalScore");
+  assertEqual(scored.tier, "yellow", "tier");
+});
+
+test("Scoring — tiers", "59 is red, one point below the yellow boundary (24 + 0 + 30 + 5)", () => {
+  const scored = scoreClient(baseClient({ amSentimentRating: 4, actualSessions: 0, expectedSessions: 1, npsSurveyScore: null, npsAmEstimatePoints: 30, newStudentsActual: 1, newStudentsTarget: 2 }));
+  assertEqual(scored.totalScore, 59, "totalScore");
+  assertEqual(scored.tier, "red", "tier");
+});
+
+// --- pipeline.js: type coercion --------------------------------------------
+
+test("Pipeline — coercion", "parses a plain integer string", () => {
+  assertEqual(coerceNumber("42"), 42);
+});
+
+test("Pipeline — coercion", "strips thousands separators", () => {
+  assertEqual(coerceNumber("1,240"), 1240);
+});
+
+test("Pipeline — coercion", "strips a trailing percent sign", () => {
+  assertEqual(coerceNumber("85%"), 85);
+});
+
+test("Pipeline — coercion", "trims surrounding whitespace", () => {
+  assertEqual(coerceNumber("  7 "), 7);
+});
+
+test("Pipeline — coercion", "returns null for non-numeric text", () => {
+  assertEqual(coerceNumber("N/A"), null);
+});
+
+test("Pipeline — coercion", "returns null for an empty string", () => {
+  assertEqual(coerceNumber(""), null);
+});
+
+// --- pipeline.js: source validation -----------------------------------------
+
+test("Pipeline — validation", "drops a row missing a required field, with an error issue", () => {
+  // expected_sessions is required and omitted here; segment/account_owner/
+  // previous_total_score are NOT required (they have schema defaults), so
+  // this row is otherwise complete on purpose.
+  const { valid, issues } = validateSource("sessions", [
+    { client_id: "x1", client_name: "Acme", actual_sessions: "10", new_students_actual: "1", new_students_target: "1" }
+  ]);
+  assertEqual(valid.length, 0, "valid.length");
+  assert(issues.length === 1 && issues[0].severity === "error", "expected one error issue");
+});
+
+test("Pipeline — validation", "applies schema defaults for optional fields left blank", () => {
+  const { valid, issues } = validateSource("sessions", [
+    { client_id: "x1", client_name: "Acme", actual_sessions: "10", expected_sessions: "10", new_students_actual: "1", new_students_target: "1" }
+  ]);
+  assertEqual(valid.length, 1, "valid.length — row is complete without segment/account_owner/previous_total_score");
+  assertEqual(valid[0].segment, "Unspecified", "default applied");
+  assertEqual(issues.length, 0, "issues.length");
+});
+
+test("Pipeline — validation", "accepts a complete, well-typed row", () => {
+  const { valid, issues } = validateSource("nps", [{ client_id: "x1", nps_survey_score: "8" }]);
+  assertEqual(valid.length, 1, "valid.length");
+  assertEqual(valid[0].nps_survey_score, 8, "coerced type");
+  assertEqual(issues.length, 0, "issues.length");
+});
+
+test("Pipeline — validation", "clamps an NPS score above the schema max, with a warning", () => {
+  const { valid, issues } = validateSource("nps", [{ client_id: "x1", nps_survey_score: "15" }]);
+  assertEqual(valid[0].nps_survey_score, 10, "clamped value");
+  assert(issues.length === 1 && issues[0].severity === "warning", "expected one warning issue");
+});
+
+test("Pipeline — validation", "flags a duplicate client_id, keeps the first", () => {
+  const { valid, issues } = validateSource("nps", [
+    { client_id: "x1", nps_survey_score: "6" },
+    { client_id: "x1", nps_survey_score: "9" }
+  ]);
+  assertEqual(valid.length, 1, "valid.length");
+  assertEqual(valid[0].nps_survey_score, 6, "keeps first row's value");
+  assert(issues.some((i) => i.message.includes("Duplicate")), "expected a duplicate warning");
+});
+
+// --- pipeline.js: join and reconciliation -----------------------------------
+
+test("Pipeline — join", "flags an NPS record for a client not in the master list", () => {
+  const sessions = [{ client_id: "x1", client_name: "Acme", segment: "SMB", account_owner: "A", actual_sessions: 10, expected_sessions: 10, new_students_actual: 1, new_students_target: 1, previous_total_score: 50 }];
+  const nps = [{ client_id: "orphan1", nps_survey_score: 8 }];
+  const am = [{ client_id: "x1", am_sentiment_rating: 5, am_nps_estimate_points: 20, notes: "" }];
+  const { issues } = joinSources(sessions, nps, am);
+  assert(issues.some((i) => i.clientId === "orphan1"), "expected an orphan-record issue for orphan1");
+});
+
+test("Pipeline — join", "excludes a client with no AM sentiment record, with an error", () => {
+  const sessions = [{ client_id: "x1", client_name: "Acme", segment: "SMB", account_owner: "A", actual_sessions: 10, expected_sessions: 10, new_students_actual: 1, new_students_target: 1, previous_total_score: 50 }];
+  const { clients, issues } = joinSources(sessions, [], []);
+  assertEqual(clients.length, 0, "clients.length");
+  assert(issues.some((i) => i.severity === "error" && i.clientId === "x1"), "expected an error for missing AM sentiment");
+});
+
+test("Pipeline — join", "joins a complete matching set into the shape scoring.js expects", () => {
+  const sessions = [{ client_id: "x1", client_name: "Acme", segment: "SMB", account_owner: "A", actual_sessions: 10, expected_sessions: 10, new_students_actual: 1, new_students_target: 1, previous_total_score: 50 }];
+  const nps = [{ client_id: "x1", nps_survey_score: 7 }];
+  const am = [{ client_id: "x1", am_sentiment_rating: 4, am_nps_estimate_points: 18, notes: "Doing fine." }];
+  const { clients } = joinSources(sessions, nps, am);
+  assertEqual(clients.length, 1, "clients.length");
+  const scored = scoreClient(clients[0]);
+  assert(Number.isFinite(scored.totalScore), "joined + scored client should have a numeric totalScore");
+});
+
+// --- render ------------------------------------------------------------
+
+const byGroup = {};
+results.forEach((r) => {
+  byGroup[r.group] = byGroup[r.group] || [];
+  byGroup[r.group].push(r);
+});
+
+const resultsEl = document.getElementById("results");
+Object.entries(byGroup).forEach(([group, items]) => {
+  const h = document.createElement("p");
+  h.className = "group";
+  h.textContent = group;
+  resultsEl.appendChild(h);
+
+  const ul = document.createElement("ul");
+  items.forEach((r) => {
+    const li = document.createElement("li");
+    li.innerHTML = `<span class="${r.pass ? "pass-mark" : "fail-mark"}">${r.pass ? "✓" : "✗"}</span>`;
+    li.appendChild(document.createTextNode(r.name));
+    if (!r.pass) {
+      const detail = document.createElement("span");
+      detail.className = "fail-detail";
+      detail.textContent = r.detail;
+      li.appendChild(detail);
+    }
+    ul.appendChild(li);
+  });
+  resultsEl.appendChild(ul);
+});
+
+const passCount = results.filter((r) => r.pass).length;
+const summary = document.getElementById("summary");
+summary.className = "summary " + (passCount === results.length ? "pass" : "fail");
+summary.textContent = `${passCount} / ${results.length} passing`;
+</script>
+
+</body>
+</html>

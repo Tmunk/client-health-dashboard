@@ -86,6 +86,10 @@ Then visit `http://localhost:8000`. (Opening `index.html` directly via `file://`
 
 To use the AI insights layer, paste an Anthropic API key into the box at the top of the page.
 
+## Tests
+
+Open `tests.html` the same way — no framework, no runner, just assertions against the real `scoring.js` and `pipeline.js` rendered as a pass/fail list. Covers the NPS failsafe, category clamps, the exact 80/60 tier boundaries, type coercion of spreadsheet-style text input, schema validation, and the reconciliation logic (orphan records, missing sources).
+
 ## Built with
 
 Vanilla HTML, CSS, and JavaScript. No framework, no build step. Uses the Anthropic Claude API directly from the browser.
